@@ -1,0 +1,107 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: launchpad
+      POSTGRES_USER: launchpad
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-launchpad}
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: ["postgres:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U launchpad"]
+      interval: 3s
+      retries: 20
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    ports: ["127.0.0.1:6379:6379"]
+    volumes: ["redis:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      retries: 20
+  app:
+    image: launchpad-project:local
+    build: .
+    init: true
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://launchpad:${POSTGRES_PASSWORD:-launchpad}@postgres:5432/launchpad
+      REDIS_URL: redis://redis:6379
+      MOCK_BASE_URL: http://app:3000/mock
+      DATA_DIR: /app/data
+    command: sh -c "npm run db:push && npm run db:seed && npm run start"
+    ports: ["127.0.0.1:3000:3000"]
+    volumes: ["browser-data:/app/data"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      start_period: 30s
+      retries: 20
+  browser-host:
+    # Stable hostname lets Chromium recover its own stale locks across recreation.
+    hostname: 1b365c05bb9b
+    image: launchpad-project:local
+    build: .
+    init: true
+    user: pwuser
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://launchpad:${POSTGRES_PASSWORD:-launchpad}@postgres:5432/launchpad
+      REDIS_URL: redis://redis:6379
+      DATA_DIR: /app/data
+      BROWSER_DISPLAY: virtual
+    command: ["bash", "scripts/start-browser-host.sh"]
+    volumes: ["browser-host-data:/app/data"]
+    shm_size: 1gb
+    stop_grace_period: 150s
+    security_opt: ["seccomp=./scripts/chromium-seccomp.json"]
+    depends_on:
+      app: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "node", "--import", "tsx", "scripts/browser-host-health.ts"]
+      interval: 5s
+      start_period: 20s
+      timeout: 5s
+      retries: 20
+  worker:
+    profiles: ["automation"]
+    build: .
+    init: true
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://launchpad:${POSTGRES_PASSWORD:-launchpad}@postgres:5432/launchpad
+      REDIS_URL: redis://redis:6379
+      DATA_DIR: /app/data
+      HEADLESS: "true"
+    command: npm run worker
+    ports: ["127.0.0.1:3001:3001"]
+    volumes: ["browser-data:/app/data"]
+    shm_size: 1gb
+    depends_on:
+      app: { condition: service_healthy }
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3001').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      retries: 5
+volumes:
+  postgres:
+  redis:
+  browser-data:
+  browser-host-data:

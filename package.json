@@ -1,0 +1,68 @@
+{
+  "name": "launchpad-browser",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev apps/web -p 3000",
+    "build": "prisma generate && next build apps/web",
+    "start": "next start apps/web -p 3000",
+    "worker": "tsx apps/worker/index.ts",
+    "login": "tsx scripts/open-browser.ts",
+    "db:push": "prisma db push",
+    "db:seed": "tsx scripts/seed.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:integration": "tsx tests/cookie-persistence.ts && tsx tests/cookie-queue.ts",
+    "format": "prettier --write apps packages scripts tests *.json *.mjs *.yml README.md",
+    "project:run": "bash scripts/project-control.sh run",
+    "project:stop": "bash scripts/project-control.sh stop",
+    "test:x": "tsx scripts/x-test.ts",
+    "project:login": "bash scripts/project-control.sh login",
+    "browser:host": "tsx scripts/profile-host.ts",
+    "test:profiles": "tsx tests/cookie-dashboard.ts",
+    "test:persistence": "tsx tests/persistent-integration.ts",
+    "verify:profiles": "tsx scripts/verify-profiles.ts"
+  },
+  "prisma": {
+    "schema": "packages/database/prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@prisma/client": "6.12.0",
+    "@radix-ui/react-slot": "1.2.3",
+    "bullmq": "5.61.2",
+    "clsx": "2.1.1",
+    "dotenv": "16.6.1",
+    "ioredis": "5.8.2",
+    "lucide-react": "0.468.0",
+    "next": "15.5.27",
+    "pino": "9.14.0",
+    "playwright": "1.56.1",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "tailwind-merge": "3.3.1",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "22.18.6",
+    "@types/react": "19.1.16",
+    "@types/react-dom": "19.1.9",
+    "autoprefixer": "10.4.21",
+    "eslint": "9.37.0",
+    "postcss": "8.5.29",
+    "prettier": "^3.6.2",
+    "prisma": "6.12.0",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3",
+    "typescript-eslint": "^8.62.0",
+    "vitest": "4.1.11"
+  },
+  "overrides": {
+    "postcss": "8.5.29",
+    "sharp": "0.35.5",
+    "tinypool": "2.1.2"
+  },
+  "type": "module"
+}

@@ -1,0 +1,25 @@
+node_modules/
+.next/
+.env
+.env.*
+!.env.example
+data/
+coverage/
+*.tsbuildinfo
+
+# Local diagnostics and private account evidence
+TEST_RESULTS.md
+.DS_Store
+*.log
+backups/
+dumps/
+playwright-report/
+test-results/
+screenshots/
+*.sqlite
+*.sqlite3
+*.dump
+*.pem
+*.key
+*.p12
+*.pfx

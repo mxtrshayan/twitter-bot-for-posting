@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Website {
+  id          String    @id @default(cuid())
+  name        String
+  baseUrl     String
+  adapterType String
+  enabled     Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  accounts    Account[]
+  jobs        PostJob[]
+}
+
+model Proxy {
+  id                String           @id @default(cuid())
+  name              String
+  protocol          String
+  host              String
+  port              Int
+  username          String?
+  encryptedPassword String?
+  enabled           Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  accounts          Account[]
+  profiles          BrowserProfile[]
+}
+
+model Account {
+  id                String          @id @default(cuid())
+  name              String
+  username          String
+  encryptedPassword String?
+  websiteId         String
+  website           Website         @relation(fields: [websiteId], references: [id])
+  proxyId           String?
+  proxy             Proxy?          @relation(fields: [proxyId], references: [id])
+  sessionPath       String?
+  status            String          @default("READY")
+  lastLoginAt       DateTime?
+  lastJobAt         DateTime?
+  lastError         String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  jobs              PostJob[]
+  browserProfileId  String?
+  browserProfile    BrowserProfile? @relation(fields: [browserProfileId], references: [id])
+}
+
+model PostJob {
+  id           String    @id @default(cuid())
+  websiteId    String
+  website      Website   @relation(fields: [websiteId], references: [id])
+  accountId    String
+  account      Account   @relation(fields: [accountId], references: [id])
+  content      String
+  kind         String    @default("POST")
+  status       String    @default("QUEUED")
+  queuedAt     DateTime  @default(now())
+  startedAt    DateTime?
+  completedAt  DateTime?
+  error        String?
+  attempts     Int       @default(0)
+  durationMs   Int?
+  lastUrl      String?
+  screenshot   String?
+  logs         Json?
+  publishedUrl String?
+
+  @@index([status, queuedAt])
+}
+
+model MockPost {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model BrowserProfile {
+  id                   String    @id @default(cuid())
+  name                 String
+  proxyId              String?   @unique
+  proxy                Proxy?    @relation(fields: [proxyId], references: [id])
+  status               String    @default("STOPPED")
+  connectionMode       String    @default("DIRECT")
+  profilePath          String?
+  profileExists        Boolean   @default(false)
+  chromePid            Int?
+  lastOpenedAt         DateTime?
+  persistenceResult    String?
+  persistenceCheckedAt DateTime?
+  mode                 String    @default("HEADLESS")
+  publicIp             String?
+  ipCheckedAt          DateTime?
+  encryptedSession     String?
+  lastLoginAt          DateTime?
+  lastInstagramLoginAt DateTime?
+  cookiesImportedAt DateTime?
+  cookieCount Int @default(0)
+  sessionStatus String @default("NONE")
+  sessionCheckedAt DateTime?
+  sessionUsername String?
+  postAttemptId String?
+  postStatus String @default("NONE")
+  postUrl String?
+  postError String?
+  lastError            String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  accounts             Account[]
+}
